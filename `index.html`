@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flores Amarillas Galaxia</title>
+<style>
+body{margin:0;background:#000;overflow:hidden}
+h1{position:absolute;color:#FFD700;width:100%;text-align:center;top:20px;font-size:28px;text-shadow:0 0 25px #FFD700, 0 0 50px #FFD700;font-family:'Arial';z-index:10;font-weight:bold}
+.texto-flotante{position:absolute;color:#FFD700;font-size:14px;text-shadow:0 0 10px #FFD700;font-family:'Arial';font-weight:bold;pointer-events:none}
+
+/* NUEVO: PANTALLA DE INICIO */
+#pantalla-inicio{
+  position:absolute; width:100%; height:100%; 
+  background:#000; z-index:999; 
+  display:flex; flex-direction:column; 
+  justify-content:center; align-items:center;
+  cursor:pointer;
+}
+.flor-inicio{
+  width:200px; height:200px;
+  background: radial-gradient(circle, #FFD700 0%, #FFA500 60%, transparent 70%);
+  border-radius:50%;
+  box-shadow: 0 0 60px #FFD700, 0 0 120px #FFD700;
+  animation: brillar 2s infinite;
+  display:flex; justify-content:center; align-items:center;
+  font-size:120px;
+}
+@keyframes brillar{
+ 0%,100%{ transform:scale(1); box-shadow: 0 0 60px #FFD700, 0 0 120px #FFD700;}
+ 50%{ transform:scale(1.1); box-shadow: 0 0 90px #FFD700, 0 0 180px #FFD700;}
+}
+#pantalla-inicio h2{
+  color:#FFD700; font-size:24px; margin-top:30px;
+  text-shadow:0 0 20px #FFD700; font-family:'Arial';
+}
+</style>
+<script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+
+<!-- NUEVO: PANTALLA DE INICIO -->
+<div id="pantalla-inicio">
+  <div class="flor-inicio">🌻</div>
+  <h2>Toca para iniciar</h2>
+</div>
+
+<h1 id="titulo">Feliz día de las Flores Amarillas 🌻</h1>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+let iniciado = false; // NUEVO: para que no gire hasta dar clic
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enabled = false; // NUEVO: desactivado hasta iniciar
+
+// 1. FONDO GALAXIA CON ESTRELLAS
+const starsGeo = new THREE.BufferGeometry();
+const starsCount = 2000;
+const posArray = new Float32Array(starsCount * 3);
+for(let i=0; i<starsCount*3; i++){
+  posArray[i] = (Math.random() - 0.5) * 200;
+}
+starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+const starsMat = new THREE.PointsMaterial({size:0.1, color:0xffffff});
+const starField = new THREE.Points(starsGeo, starsMat);
+scene.add(starField);
+
+// 2. AGUJERO NEGRO CON ANILLO AMARILLO
+const agujero = new THREE.Mesh(new THREE.SphereGeometry(2.5, 32, 32), new THREE.MeshBasicMaterial({color:0x000}));
+scene.add(agujero);
+
+const anilloGeo = new THREE.RingGeometry(2.6, 3.5, 64);
+const anilloMat = new THREE.MeshBasicMaterial({color:0xFFD700, side:THREE.DoubleSide});
+const anillo = new THREE.Mesh(anilloGeo, anilloMat);
+anillo.rotation.x = Math.PI / 2;
+scene.add(anillo);
+
+// 3. FUNCION GIRASOL CON PETALOS - IGUAL QUE ANTES
+function crearGirasol(x, y, z) {
+  const grupo = new THREE.Group();
+  const tallo = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2, 8), new THREE.MeshBasicMaterial({color:0x228B22}));
+  tallo.position.y = -1;
+  grupo.add(tallo);
+  const centro = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), new THREE.MeshBasicMaterial({color:0x8B4513}));
+  grupo.add(centro);
+  const petaloGeo = new THREE.SphereGeometry(0.2, 8, 8);
+  const petaloMat = new THREE.MeshBasicMaterial({color:0xFFD700});
+  for(let i=0; i<14; i++){
+    const angulo = (i * Math.PI * 2) / 14;
+    const petalo = new THREE.Mesh(petaloGeo, petaloMat);
+    petalo.position.set(Math.cos(angulo)*0.5, Math.sin(angulo)*0.5, 0);
+    grupo.add(petalo);
+  }
+  grupo.position.set(x, y, z);
+  scene.add(grupo);
+}
+
+// 4. 80 GIRASOLES DISPERSOS - IGUAL QUE ANTES
+for(let i=0; i<80; i++){
+  const angulo = i * 0.25;
+  const radio = 8 + Math.random()*2;
+  crearGirasol(Math.cos(angulo)*radio, Math.random()*2-1, Math.sin(angulo)*radio);
+}
+
+// 5. TEXTOS FLOTANDO - AGREGUE MAS COMO EN LA FOTO
+const textos = ["Eres Luz", "Sonríe siempre", "Te Amo", "Mi vida", "Siempre brillas", "Flores para ti", "Eres pura alegría", "Luz en mi vida", "Alegra mis días", "Eres muy especial ✨"];
+textos.forEach((txt, i)=>{
+  const div = document.createElement('div');
+  div.className = 'texto-flotante';
+  div.innerText = txt;
+  div.style.top = (20 + Math.random()*60) + '%';
+  div.style.left = (10 + Math.random()*80) + '%';
+  document.body.appendChild(div);
+});
+
+camera.position.set(0, 8, 18);
+
+// NUEVO: AL DAR CLIC SE QUITA LA PANTALLA
+document.getElementById('pantalla-inicio').onclick = function(){
+  this.style.display = 'none';
+  controls.enabled = true;
+  iniciado = true;
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  if(iniciado){ // SOLO GIRA SI YA DIO CLIC
+    scene.rotation.y += 0.002; // Gira lento la galaxia
+    anillo.rotation.z += 0.01; // Gira el anillo
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
