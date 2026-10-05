@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>V32 COCKPIT REAL + MUSICA FIX</title>
+<title>V32.2 COCKPIT REAL + TU LOGICA</title>
 <style>body{margin:0;background:#000;overflow:hidden;touch-action:none}canvas{display:block;width:100vw;height:100vh}
 #txt{position:fixed;top:44%;left:50%;transform:translate(-50%,-50%);color:#0ff;font-family:monospace;font-size:13px;letter-spacing:3px;text-shadow:0 0 15px #0ff;z-index:10;pointer-events:none;text-align:center}
 #hint{position:fixed;top:12px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.35);font-family:monospace;font-size:9px;z-index:10;pointer-events:none}
@@ -13,11 +13,7 @@
 <div id="hint">ESTRELLAS + CONSTELACIONES + CALOR</div>
 <div id="txt">TOCA PARA INICIAR MOTORES + MÚSICA</div>
 <button id="musicBtn">▶️ MÚSICA: OFF</button>
-
-<audio id="bgMusic" loop preload="auto" crossorigin="anonymous">
-  <source src="space.mp3" type="audio/mpeg">
-</audio>
-
+<audio id="bgMusic" loop preload="auto" crossorigin="anonymous"><source src="space.mp3" type="audio/mpeg"></audio>
 <canvas id="c"></canvas>
 <script>
 const music=document.getElementById('bgMusic'), musicBtn=document.getElementById('musicBtn');
@@ -42,13 +38,11 @@ let introDuration=90000, introStart=performance.now(), introActive=true;
 let txtEl=document.getElementById('txt');
 let yaw=0.3,pitch=-0.15,zoom=0.85,lastX=0,lastY=0,dragging=false;
 let time=0,speed=0,maxSpeed=85;
-
-// IMAGEN COCKPIT REAL
 let cockpitImg = new Image(); cockpitImg.src='cockpit.jpg';
 let frameTick=0;
 
 function makeNebulaSprite(c1,c2,size){let sc=document.createElement('canvas'); sc.width=sc.height=size*2; let s=sc.getContext('2d'); let g=s.createRadialGradient(size,size,0,size,size,size); g.addColorStop(0,c1); g.addColorStop(0.3,c2); g.addColorStop(1,'rgba(0,0,0,0)'); s.fillStyle=g; s.beginPath(); s.arc(size,size,size,0,7); s.fill(); return sc;}
-let nebulaSprites=[makeNebulaSprite('rgba(120,80,255,0.9)','rgba(60,30,180,0.3)',180),makeNebulaSprite('rgba(255,60,120,0.85)','rgba(180,20,80,0.25)',200),makeNebulaSprite('rgba(0,200,255,0.8)','rgba(0,120,180,0.25)',160)];
+let nebulaSprites=[makeNebulaSprite('rgba(120,80,255,0.9)','rgba(60,30,180,0.3)',180),makeNebulaSprite('rgba(0,255,140,0.9)','rgba(0,180,80,0.3)',200),makeNebulaSprite('rgba(0,200,255,0.8)','rgba(0,120,180,0.25)',160)];
 let nebulas=[{x:0.22,y:0.18,z:1200,spr:0,scale:1.2},{x:0.75,y:0.68,z:2000,spr:1,scale:1.4},{x:0.45,y:0.82,z:1600,spr:2,scale:1.0}];
 function makePlanetSprite(color,size){let sc=document.createElement('canvas'); sc.width=sc.height=size*2.6; let s=sc.getContext('2d'); let g=s.createRadialGradient(size*0.7,size*0.7,0,size,size,size); g.addColorStop(0,'#fff'); g.addColorStop(0.25,color); g.addColorStop(1,'#000'); s.fillStyle=g; s.beginPath(); s.arc(size,size,size*0.92,0,7); s.fill(); return sc;}
 let sprites={}; ['#a0a0a0','#e6cdac','#2b82ff','#ff6a3d','#d8ca9d','#f7ec4f','#43b0f1','#2d5fcc'].forEach(k=>sprites[k]=makePlanetSprite(k,26));
@@ -57,21 +51,41 @@ const planets=[{dist:0,size:24,sun:true,orbitSpeed:0},{dist:28,size:3.5,color:'#
 let stars=[]; for(let i=0;i<320;i++) stars.push({x:Math.random()*W,y:Math.random()*H,s:Math.random()*1.8+0.3,tw:Math.random()*6.28,sp:0.02+Math.random()*0.04});
 let stars3D=[]; for(let i=0;i<320;i++) stars3D.push({x:(Math.random()-0.5)*2000,y:(Math.random()-0.5)*2000,z:Math.random()*2000,sz:Math.random()*2+0.5});
 
-function drawCockpitReal(){
+// --- FIX: COCKPIT CON VIDA REAL ---
+function drawCockpitReal(cx,cy){
   frameTick+=0.15;
   let shakeX = Math.sin(frameTick*3)* (speed>50? 2.5:0.5);
   let shakeY = Math.cos(frameTick*2.7)* (speed>50? 1.5:0.3);
-  // si la imagen aún no carga, dibuja fallback viejo
   if(cockpitImg.complete && cockpitImg.naturalWidth>0){
     ctx.save();
-    ctx.globalAlpha=0.92;
-    // efecto brillo parpadeo frame x frame
-    let bright = 0.85 + Math.sin(frameTick)*0.15;
+    // 1. Dibuja cabina completa con brillo vivo
+    let bright = 0.9 + Math.sin(frameTick)*0.12 + (speed/100)*0.25;
     ctx.filter=`brightness(${bright})`;
-    ctx.drawImage(cockpitImg, shakeX, H*0.48+shakeY, W, H*0.52, shakeX, H*0.48+shakeY, W, H*0.52);
+    ctx.drawImage(cockpitImg, shakeX, shakeY, W, H);
+    ctx.restore();
+
+    // 2. SOBRE-ESCRIBE el parabrisas estático de la foto con tu espacio vivo
+    // Esto hace que se vea verde/azul animado dentro
+    ctx.save();
+    ctx.beginPath();
+    // recorte exacto del parabrisas de tu foto
+    ctx.rect(W*0.03, H*0.20, W*0.94, H*0.42);
+    ctx.clip();
+    // brillo verde vivo frame x frame
+    ctx.globalAlpha = 0.18 + Math.sin(frameTick*1.5)*0.08;
+    ctx.fillStyle = '#00ff88';
+    ctx.fillRect(W*0.03, H*0.20, W*0.94, H*0.42);
+    // re-dibuja nebulosas vivas ENCIMA del JPG para dar vida
+    for(let n of nebulas){
+      let scale=600/n.z;
+      let nx=cx+(n.x*W-cx)*scale*0.25, ny=cy+(n.y*H-cy)*scale*0.25;
+      let spr=nebulaSprites[n.spr]; let sz=spr.width*scale*n.scale*0.6;
+      ctx.globalAlpha=0.6*scale;
+      ctx.drawImage(spr,nx-sz/2,ny-sz/2,sz,sz);
+    }
     ctx.restore();
   }
-  let mx=W/2, my=H*0.46;
+  let mx=W/2, my=H*0.42;
   ctx.strokeStyle='rgba(0,255,255,1)'; ctx.lineWidth=1.3;
   ctx.beginPath(); ctx.moveTo(mx-20,my); ctx.lineTo(mx-7,my); ctx.moveTo(mx+7,my); ctx.lineTo(mx+20,my); ctx.moveTo(mx,my-20); ctx.lineTo(mx,my-7); ctx.moveTo(mx,my+7); ctx.lineTo(mx,my+20); ctx.stroke();
   ctx.fillStyle='#0ff'; ctx.font='11px monospace';
@@ -85,7 +99,8 @@ function drawStars(cx,cy){
 function draw(){
  time+=0.016; let elapsed=performance.now()-introStart; let p=Math.min(elapsed/introDuration,1);
  if(p<0.25) speed=p/0.25*maxSpeed; else if(p<0.75) speed=maxSpeed; else speed=maxSpeed*(1-(p-0.75)/0.25);
- let cx=W/2+Math.sin(yaw)*140, cy=H/2.5+Math.sin(pitch)*90;
+ // FIX: Centro justo en los visores
+ let cx=W/2+Math.sin(yaw)*140, cy=H*0.38+Math.sin(pitch)*90;
  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
  if(introActive){
    txtEl.innerHTML=p<0.5?"HIPERESPACIO • TOCA PARA MÚSICA":"SISTEMA SOLAR • FRENANDO";
@@ -93,12 +108,11 @@ function draw(){
    drawStars(cx,cy);
    for(let n of nebulas){ n.z-=speed*0.6; if(n.z<10){ n.z=3000; n.x=Math.random(); } let scale=600/n.z; let nx=cx+(n.x*W-cx)*scale*0.25, ny=cy+(n.y*H-cy)*scale*0.25; let spr=nebulaSprites[n.spr]; let sz=spr.width*scale*n.scale; ctx.save(); ctx.globalAlpha=0.85*scale; ctx.translate(nx,ny); ctx.drawImage(spr,-sz/2,-sz/2,sz,sz); ctx.restore(); }
    for(let s of stars3D){ s.z-=speed*0.85; if(s.z<10){ s.z=2000; s.x=(Math.random()-0.5)*2000; } let scale=600/s.z; let sx=cx+s.x*scale, sy=cy+s.y*scale; ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.arc(sx,sy,s.sz*scale,0,7); ctx.fill(); }
-   drawCockpitReal(); if(p>=1){ introActive=false; txtEl.style.opacity='0'; setTimeout(()=>txtEl.style.display='none',800); } requestAnimationFrame(draw); return;
+   drawCockpitReal(cx,cy); if(p>=1){ introActive=false; txtEl.style.opacity='0'; setTimeout(()=>txtEl.style.display='none',800); } requestAnimationFrame(draw); return;
  }
  drawStars(cx,cy);
- let sunX=0,sunY=0,sunSc=0;
- for(let pl of planets){ let ang=time*pl.orbitSpeed; let x3=pl.dist*Math.cos(ang), z3=pl.dist*Math.sin(ang); let xRot=x3*Math.cos(yaw)-z3*Math.sin(yaw); let zRot=x3*Math.sin(yaw)+z3*Math.cos(yaw); let yRot=-zRot*Math.sin(pitch); let sc=zoom/(1+zRot*0.0045); let sx=cx+xRot*sc*2.2, sy=cy+yRot*sc*2.2; if(pl.dist!==0){ ctx.strokeStyle='rgba(0,255,255,0.06)'; ctx.beginPath(); ctx.ellipse(cx,cy,pl.dist*sc*2.2*Math.abs(Math.cos(yaw)),pl.dist*sc*2.2*0.22,0,0,7); ctx.stroke(); } if(pl.sun){ sunX=sx; sunY=sy; sunSc=sc; ctx.drawImage(sunSprite,sx-40*sc,sy-40*sc,80*sc,80*sc); } else if(zRot>-280){ let spr=sprites[pl.color]; if(spr) ctx.drawImage(spr,sx-spr.width/2*sc*0.42,sy-spr.height/2*sc*0.42,spr.width*sc*0.42,spr.height*sc*0.42); if(pl.hasRing){ ctx.strokeStyle='rgba(247,236,79,0.6)'; ctx.lineWidth=2.2*sc; ctx.beginPath(); ctx.ellipse(sx,sy,pl.size*sc*2.0,pl.size*sc*0.65,0.4,0,7); ctx.stroke(); } } }
- drawCockpitReal(); requestAnimationFrame(draw);
+ for(let pl of planets){ let ang=time*pl.orbitSpeed; let x3=pl.dist*Math.cos(ang), z3=pl.dist*Math.sin(ang); let xRot=x3*Math.cos(yaw)-z3*Math.sin(yaw); let zRot=x3*Math.sin(yaw)+z3*Math.cos(yaw); let yRot=-zRot*Math.sin(pitch); let sc=zoom/(1+zRot*0.0045); let sx=cx+xRot*sc*2.2, sy=cy+yRot*sc*2.2; if(pl.dist!==0){ ctx.strokeStyle='rgba(0,255,255,0.06)'; ctx.beginPath(); ctx.ellipse(cx,cy,pl.dist*sc*2.2*Math.abs(Math.cos(yaw)),pl.dist*sc*2.2*0.22,0,0,7); ctx.stroke(); } if(pl.sun){ ctx.drawImage(sunSprite,sx-40*sc,sy-40*sc,80*sc,80*sc); } else if(zRot>-280){ let spr=sprites[pl.color]; if(spr) ctx.drawImage(spr,sx-spr.width/2*sc*0.42,sy-spr.height/2*sc*0.42,spr.width*sc*0.42,spr.height*sc*0.42); if(pl.hasRing){ ctx.strokeStyle='rgba(247,236,79,0.6)'; ctx.lineWidth=2.2*sc; ctx.beginPath(); ctx.ellipse(sx,sy,pl.size*sc*2.0,pl.size*sc*0.65,0.4,0,7); ctx.stroke(); } } }
+ drawCockpitReal(cx,cy); requestAnimationFrame(draw);
 }
 draw();
 c.addEventListener('touchstart',e=>{dragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY;});
