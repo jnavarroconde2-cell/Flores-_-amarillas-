@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>V32.3 CRONOMETRO + VIDRIO CLARO</title>
+<title>V32.4 NAVE 100%</title>
 <style>body{margin:0;background:#000;overflow:hidden;touch-action:none}canvas{display:block;width:100vw;height:100vh}
 #txt{position:fixed;top:44%;left:50%;transform:translate(-50%,-50%);color:#0ff;font-family:monospace;font-size:13px;letter-spacing:3px;text-shadow:0 0 15px #0ff;z-index:10;pointer-events:none;text-align:center}
 #hint{position:fixed;top:12px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.35);font-family:monospace;font-size:9px;z-index:10;pointer-events:none}
@@ -10,7 +10,7 @@
 </style>
 </head>
 <body>
-<div id="hint">ESTRELLAS + CONSTELACIONES + CALOR</div>
+<div id="hint">SISTEMA 100% OPERATIVO</div>
 <div id="txt">TOCA PARA INICIAR MOTORES + MÚSICA</div>
 <button id="musicBtn">▶️ MÚSICA: OFF</button>
 <audio id="bgMusic" loop preload="auto"><source src="space.mp3" type="audio/mpeg"></audio>
@@ -37,40 +37,56 @@ let stars=[]; for(let i=0;i<320;i++) stars.push({x:Math.random()*W,y:Math.random
 let stars3D=[]; for(let i=0;i<320;i++) stars3D.push({x:(Math.random()-0.5)*2000,y:(Math.random()-0.5)*2000,z:Math.random()*2000,sz:Math.random()*2+0.5});
 
 function drawCockpitReal(cx,cy){
-  frameTick+=0.15;
-  let shakeX=Math.sin(frameTick*3)*(speed>50?1.2:0.3), shakeY=Math.cos(frameTick*2.7)*(speed>50?0.8:0.2);
+  frameTick+=0.16;
+  let shakeX=Math.sin(frameTick*2.8)*(speed>50?1.5:0.4), shakeY=Math.cos(frameTick*2.4)*(speed>50?1.0:0.3);
   if(cockpitImg.complete && cockpitImg.naturalWidth>0){
-    ctx.save(); ctx.filter=`brightness(${0.95+Math.sin(frameTick)*0.08})`; ctx.drawImage(cockpitImg, shakeX, shakeY, W, H); ctx.restore();
-    // VIDRIO CLARO - tapamos el dibujo verde viejo y ponemos espacio vivo CLARO
-    ctx.save(); ctx.beginPath(); ctx.rect(W*0.02, H*0.18, W*0.96, H*0.44); ctx.clip();
-    // Re-dibujamos nebulosas vivas ENCIMA para que se vean claras
-    for(let n of nebulas){ let scale=600/n.z; let nx=cx+(n.x*W-cx)*scale*0.25, ny=cy+(n.y*H-cy)*scale*0.25; let spr=nebulaSprites[n.spr]; let sz=spr.width*scale*n.scale*0.7; ctx.globalAlpha=0.75*scale; ctx.drawImage(spr,nx-sz/2,ny-sz/2,sz,sz);}
+    ctx.save(); ctx.drawImage(cockpitImg, shakeX, shakeY, W, H); ctx.restore();
+
+    // 1. VIDRIO 100% CLARO - re-dibujamos espacio vivo nítido
+    ctx.save(); ctx.beginPath(); ctx.rect(W*0.04, H*0.205, W*0.92, H*0.415); ctx.clip();
+    for(let n of nebulas){ let scale=600/n.z; let nx=cx+(n.x*W-cx)*scale*0.25, ny=cy+(n.y*H-cy)*scale*0.25; let spr=nebulaSprites[n.spr]; let sz=spr.width*scale*n.scale*0.75; ctx.globalAlpha=0.8*scale; ctx.drawImage(spr,nx-sz/2,ny-sz/2,sz,sz);}
     ctx.restore();
 
-    // --- CRONOMETROS VIVOS ---
-    // Tapa los números estáticos de la foto
-    ctx.fillStyle='#000';
-    ctx.fillRect(W*0.015, H*0.12, W*0.28, H*0.13); // NAV LOCK area
-    ctx.fillRect(W*0.68, H*0.12, W*0.30, H*0.13); // SHIELD area
-    ctx.fillRect(W*0.02, H*0.91, W*0.96, H*0.06); // barra inferior
+    // 2. NAVE 100% - LEDs reales que parpadean
+    let leds = [
+      [0.12,0.68],[0.18,0.71],[0.25,0.73],[0.31,0.70],[0.38,0.68],
+      [0.60,0.69],[0.67,0.71],[0.74,0.73],[0.82,0.71],[0.88,0.68],
+      [0.15,0.82],[0.22,0.84],[0.65,0.83],[0.78,0.82]
+    ];
+    leds.forEach((p,i)=>{
+      let blink = Math.sin(frameTick*2 + i*1.3) > 0.2? 1 : 0.15;
+      ctx.fillStyle = i%3==0? `rgba(0,255,255,${blink})` : i%3==1? `rgba(0,255,100,${blink})` : `rgba(255,255,0,${blink})`;
+      ctx.shadowBlur=10; ctx.shadowColor=ctx.fillStyle;
+      ctx.beginPath(); ctx.arc(W*p[0]+shakeX, H*p[1]+shakeY, 3,0,7); ctx.fill(); ctx.shadowBlur=0;
+    });
 
-    ctx.fillStyle='#00ffff'; ctx.font=`${Math.floor(W*0.018)}px monospace`; ctx.shadowColor='#0ff'; ctx.shadowBlur=8;
-    let heading = (134 + Math.sin(time*0.5)*5).toFixed(1);
-    let mark = (7 + Math.cos(time*0.3)).toFixed(0);
-    let vel = (0.82 + Math.sin(time*0.8)*0.08).toFixed(2);
-    let shield = Math.floor(82 + Math.sin(time*0.4)*3);
-    let power = Math.floor(91 + Math.cos(time*0.6)*2);
-    let fuel = (92.4 - (performance.now()-introStart)/90000*12).toFixed(1);
+    // 3. AGUJA VELOCÍMETRO IZQUIERDA
+    let gaugeX=W*0.12+shakeX, gaugeY=H*0.68+shakeY, gaugeR=W*0.055;
+    let angle = -Math.PI*0.8 + (speed/100)*Math.PI*1.6;
+    ctx.strokeStyle='#0ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(gaugeX,gaugeY); ctx.lineTo(gaugeX+Math.cos(angle)*gaugeR*0.8, gaugeY+Math.sin(angle)*gaugeR*0.8); ctx.stroke();
 
-    ctx.fillText(`NAV LOCK: ENGAGED`, W*0.02, H*0.14);
-    ctx.fillText(`HEADING ${heading}° MARK ${mark}`, W*0.02, H*0.17);
-    ctx.fillText(`VEL: ${vel}c`, W*0.02, H*0.20);
-    ctx.fillText(`SHIELD: ${shield}% POWER: ${power}%`, W*0.70, H*0.15);
-    ctx.fillText(`FUEL: ${fuel}% TARGET: -- NONE --`, W*0.70, H*0.18);
-    ctx.fillStyle='#0ff'; ctx.font=`${Math.floor(W*0.022)}px monospace`;
-    ctx.fillText(`VELOCIDAD: ${Math.floor(speed)}% LUZ | FUEL: ${fuel}% | LIFE SUPPORT: NOMINAL | CABIN PRESS: ${Math.floor(101.3+Math.sin(time)*0.5)}kPa`, W*0.02, H*0.95);
+    // 4. RADAR CENTRAL BARRIDO
+    let radarX=W*0.5, radarY=H*0.17, radarR=W*0.065;
+    ctx.save(); ctx.translate(radarX,radarY); ctx.rotate(time*0.8);
+    ctx.strokeStyle='rgba(0,255,255,0.9)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(radarR,0); ctx.stroke(); ctx.restore();
+    ctx.strokeStyle='rgba(0,255,255,0.25)'; ctx.beginPath(); ctx.arc(radarX,radarY,radarR,0,7); ctx.stroke();
+
+    // 5. CRONÓMETROS VIVOS - tapa y reescribe
+    ctx.fillStyle='rgba(0,0,0,0.85)'; ctx.fillRect(W*0.02, H*0.11, W*0.30, H*0.11); ctx.fillRect(W*0.66, H*0.11, W*0.32, H*0.11); ctx.fillRect(W*0.01, H*0.905, W*0.98, H*0.07);
+    ctx.fillStyle='#00ffff'; ctx.font=`bold ${Math.floor(W*0.019)}px monospace`; ctx.shadowColor='#0ff'; ctx.shadowBlur=6;
+    let heading=(134+Math.sin(time*0.5)*8).toFixed(1), mark=(7+Math.cos(time*0.4)*2).toFixed(0);
+    let vel=(0.82+Math.sin(time*0.9)*0.12).toFixed(3), shield=Math.floor(82+Math.sin(time*0.35)*4), power=Math.floor(91+Math.cos(time*0.5)*3);
+    let fuel=(92.4-(performance.now()-introStart)/90000*15).toFixed(1); if(fuel<0) fuel=0;
+    ctx.fillText(`NAV LOCK: ENGAGED`, W*0.025, H*0.135);
+    ctx.fillText(`HEADING ${heading}° MARK ${mark} VEL: ${vel}c`, W*0.025, H*0.165);
+    ctx.fillText(`SHIELD: ${shield}% POWER: ${power}% FUEL: ${fuel}%`, W*0.67, H*0.145);
+    ctx.fillText(`TARGET: -- NONE -- STARDATE: ${Math.floor(2338+time/10)}.${Math.floor(time*10)%100}`, W*0.67, H*0.175);
+    ctx.fillStyle='#0ff'; ctx.font=`${Math.floor(W*0.021)}px monospace`;
+    ctx.fillText(`VEL: ${Math.floor(speed)}% LUZ | LIFE SUPPORT: NOMINAL | PRESS: ${(101.3+Math.sin(time)*0.6).toFixed(1)}kPa | FUEL: ${fuel}%`, W*0.02, H*0.95);
+    ctx.shadowBlur=0;
   }
-  let mx=W/2, my=H*0.40; ctx.strokeStyle='rgba(0,255,255,0.9)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(mx-18,my); ctx.lineTo(mx-6,my); ctx.moveTo(mx+6,my); ctx.lineTo(mx+18,my); ctx.moveTo(mx,my-18); ctx.lineTo(mx,my-6); ctx.moveTo(mx,my+6); ctx.lineTo(mx,my+18); ctx.stroke();
+  let mx=W/2, my=H*0.40; ctx.strokeStyle='rgba(0,255,255,0.9)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(mx-18,my); ctx.lineTo(mx-6,my); ctx.moveTo(mx+6,my); ctx.lineTo(mx+18,my); ctx.moveTo(mx,my-18); ctx.lineTo(mx,my-6); ctx.moveTo(mx,my+6); ctx.lineTo(mx,my+18); ctx.stroke();
   if(introActive){ let pct=Math.min((performance.now()-introStart)/introDuration,1)*100; ctx.fillStyle='rgba(0,255,255,0.9)'; ctx.fillRect(W/2-100,H-12,pct*2,3);}
 }
 function drawStars(cx,cy){ for(let s of stars){ s.tw+=s.sp; let tw=0.5+Math.sin(s.tw)*0.5; ctx.fillStyle=`rgba(255,255,255,${0.3+tw*0.5})`; ctx.beginPath(); ctx.arc(s.x+Math.sin(yaw)*20, s.y+Math.sin(pitch)*10, s.s*tw,0,7); ctx.fill();}}
