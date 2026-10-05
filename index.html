@@ -18,134 +18,50 @@ canvas{display:block;width:100vw;height:100vh}
 const c=document.getElementById('c'), ctx=c.getContext('2d');
 function rs(){c.width=innerWidth; c.height=innerHeight} rs(); onresize=rs;
 let yaw=0.3,pitch=-0.2,zoom=0.9,lastX=0,lastY=0,dragging=false;
-let time=0,intro=0,done=false;
+let time=0,done=false;
 const loreEl=document.getElementById('lore');
+let anim={zoom:3.5,yaw:0,pitch:0,bh:3.5,blur:5,drag:false,lx:0,ly:0,ld:0};
 
 const planets=[
- {dist:0,size:18,sun:true,name:'SOL'},
- {dist:26,size:3,color:'#aaa',name:'MERCURY'},
- {dist:40,size:5.5,color:'#e6cdac',name:'VENUS'},
- {dist:56,size:6,color:'#2b82ff',name:'TERRA'},
- {dist:74,size:4.5,color:'#ff6a3d',name:'MARS'},
- {dist:102,size:12,color:'#d8ca9d',name:'JUPITER'},
- {dist:134,size:10.5,color:'#f7ec4f',name:'SATURN',hasRing:true},
- {dist:164,size:8.5,color:'#43b0f1',name:'URANUS'},
- {dist:194,size:8.5,color:'#2d5fcc',name:'NEPTUNE'},
+ {dist:0,size:18,sun:true},{dist:26,size:3,color:'#aaa'},{dist:40,size:5.5,color:'#e6cdac'},{dist:56,size:6,color:'#2b82ff'},{dist:74,size:4.5,color:'#ff6a3d'},{dist:102,size:12,color:'#d8ca9d'},{dist:134,size:10.5,color:'#f7ec4f',hasRing:true},{dist:164,size:8.5,color:'#43b0f1'},{dist:194,size:8.5,color:'#2d5fcc'},
 ];
 let stars=[]; for(let i=0;i<180;i++) stars.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,s:Math.random()});
-let ast=[]; for(let i=0;i<12;i++) ast.push({dist:84+Math.random()*6,ang:Math.random()*6.28,size:Math.random()*0.8+0.4});
-let kuiper=[]; for(let i=0;i<14;i++) kuiper.push({dist:220+Math.random()*30,ang:Math.random()*6.28,size:0.8});
 
-function drawSun(x,y,r,t){
- ctx.save(); ctx.translate(x,y);
- ctx.shadowBlur=18; ctx.shadowColor='#ffaa00'; ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.arc(0,0,r,0,7); ctx.fill(); ctx.shadowBlur=0;
- let g=ctx.createRadialGradient(0,0,0,0,0,r); g.addColorStop(0,'#fff8cc'); g.addColorStop(1,'#ff6600'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r*0.85,0,7); ctx.fill();
- ctx.restore();
+function drawSun(x,y,r){ ctx.save(); ctx.translate(x,y); ctx.shadowBlur=16; ctx.shadowColor='#ffaa00'; ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.arc(0,0,r,0,7); ctx.fill(); ctx.shadowBlur=0; ctx.restore(); }
+function drawBH(x,y,s){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(0,0,14,0,7); ctx.fill(); ctx.strokeStyle='#ffbb66'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(0,0,16,0,7); ctx.stroke(); ctx.restore(); }
+
+function render(){
+  let cx=innerWidth/2, cy=innerHeight/2.5;
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,innerWidth,innerHeight);
+  stars.forEach(s=>{ ctx.fillStyle=`rgba(200,220,255,${0.3+s.s*0.5})`; ctx.fillRect(s.x,s.y,1,1); });
+  let bhX=cx+300*(1-anim.zoom), bhY=cy-180*(1-anim.zoom);
+  drawBH(bhX,bhY,anim.bh);
+  planets.forEach(p=>{
+    let ang=time*(p.dist?0.22/p.dist:0); let x3=p.dist*Math.cos(ang), z3=p.dist*Math.sin(ang);
+    let xr=x3*Math.cos(anim.yaw)-z3*Math.sin(anim.yaw); let zr=x3*Math.sin(anim.yaw)+z3*Math.cos(anim.yaw); let yr=-zr*Math.sin(anim.pitch);
+    let sx=cx+xr*anim.zoom*1.8, sy=cy+yr*anim.zoom*1.8;
+    if(p.dist!=0){ ctx.strokeStyle='rgba(0,255,255,0.15)'; ctx.beginPath(); ctx.ellipse(cx,cy,p.dist*anim.zoom*1.8,p.dist*anim.zoom*0.32,0,0,7); ctx.stroke(); }
+    if(p.sun) drawSun(sx,sy,p.size*anim.zoom); else { ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(sx,sy,p.size*anim.zoom,0,7); ctx.fill(); }
+  });
+  time+=0.02;
+  requestAnimationFrame(render);
 }
-function drawBH(x,y,s,t,phase){
- ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
- if(phase<2){ // fase cerca, se ve grande y distorsionado
-   ctx.rotate(t*0.05);
-   let grad=ctx.createRadialGradient(0,0,15,0,0,80);
-   grad.addColorStop(0,'rgba(0,0,0,1)'); grad.addColorStop(0.2,'rgba(0,0,0,1)'); grad.addColorStop(0.25,'rgba(255,200,100,1)'); grad.addColorStop(0.35,'rgba(255,100,0,0.8)'); grad.addColorStop(1,'rgba(0,0,0,0)');
-   ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(0,0,80,0,7); ctx.fill();
- }else{
-   ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(0,0,14,0,7); ctx.fill();
-   ctx.strokeStyle='#88bbff'; ctx.lineWidth=0.8; ctx.beginPath(); ctx.arc(0,0,15,0,7); ctx.stroke();
- }
- ctx.restore();
-}
+render();
 
-function draw(){
- intro+=0.016;
- time+=0.02;
+gsap.timeline({onComplete:()=>{done=true; loreEl.style.transition='opacity 1s'; loreEl.style.opacity='0'; c.style.filter='none';}})
+.to(anim,{zoom:0.35,bh:0.6,yaw:0.8,blur:3,duration:2,ease:"power2.inOut",onUpdate:()=>{loreEl.innerHTML="<b>[0-2s] GARGANTUA</b><br>Escapando..."; c.style.filter=`blur(${anim.blur}px)`;}})
+.to(anim,{zoom:0.35,yaw:2.5,blur:0,duration:2,ease:"power4.in",onUpdate:()=>{loreEl.innerHTML="<b>[2-4s] WARP 2.5c</b><br>Salto superluminico";}})
+.to(anim,{zoom:0.6,blur:0,duration:2.5,ease:"power1.out",onUpdate:()=>{loreEl.innerHTML="<b>[4-6.5s] KUIPER</b><br>220 UA detectado";}})
+.to(anim,{zoom:0.9,yaw:0.3,pitch:-0.2,bh:0.45,duration:1.5,ease:"power2.out",onUpdate:()=>{loreEl.innerHTML="<b>[6.5-8s] SISTEMA SOLAR</b><br>Entrada estabilizada"; c.style.filter='none';}});
 
- let cx=innerWidth/2, cy=innerHeight/2.5;
- ctx.fillStyle='#000'; ctx.fillRect(0,0,innerWidth,innerHeight);
-
- let phase=intro; // lore timeline 0-8s
- let loreText='';
- let bhScale=zoom;
- let bhX=cx, bhY=cy;
-
- // === LORE FASES ===
- if(phase<2){
-   // FASE 1: Cerca al Gargantua (0-2s)
-   loreText=`<b>[0.0s] SECTOR: GARGANTUA PRIME</b><br>Gravedad: 4000G | Horizonte de eventos detectado. Escapando...`;
-   bhX=cx; bhY=cy; bhScale=3.5-phase*1.2; // gigante y te alejas
-   zoom=0.4;
-   yaw+=0.015;
-   // estrellas girando por distorsión gravitacional
-   ctx.save(); ctx.translate(cx,cy); ctx.rotate(intro*0.3);
-   stars.forEach(s=>{ ctx.fillStyle=`rgba(255,200,100,${0.3+s.s*0.4})`; ctx.fillRect(s.x-cx,s.y-cy,1.2,1.2); });
-   ctx.restore();
-   // lensing
-   c.style.filter=`contrast(1.3) brightness(1.2)`;
- }else if(phase<4){
-   // FASE 2: Salto warp (2-4s)
-   loreText=`<b>[${phase.toFixed(1)}s] WARP DRIVE ACTIVADO</b><br>Velocidad: 2.5c | Saliendo del pozo gravitacional...`;
-   bhScale=1.1-(phase-2)*0.3;
-   bhX=cx+Math.sin(yaw)*200*(phase-2);
-   c.style.filter=`blur(${(4-phase)*1.5}px)`;
-   // estrellas estiradas warp
-   stars.forEach(s=>{
-     let len=(4-phase)*30;
-     ctx.strokeStyle=`rgba(150,200,255,${0.5})`; ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(s.x,s.y+len); ctx.stroke();
-   });
-   yaw+=0.02;
-   zoom=0.35+(phase-2)*0.1;
- }else if(phase<6.5){
-   // FASE 3: Cruzando el vacío inter-estelar (4-6.5s)
-   loreText=`<b>[${phase.toFixed(1)}s] VACÍO INTERESTELAR</b><br>Cinturón de Kuiper detectado a 220 UA | Decelerando a impulso...`;
-   c.style.filter='none';
-   stars.forEach(s=>{ ctx.fillStyle=`rgba(200,220,255,${0.3+s.s*0.5})`; ctx.fillRect(s.x,s.y,0.8,0.8); });
-   kuiper.forEach(k=>{ k.ang+=0.004; let x3=k.dist*Math.cos(k.ang), z3=k.dist*Math.sin(k.ang); let xr=x3*Math.cos(yaw)-z3*Math.sin(yaw); let zr=x3*Math.sin(yaw)+z3*Math.cos(yaw); let sx=cx+xr*zoom*1.8, sy=cy-zr*Math.sin(pitch)*zoom*0.3; ctx.fillStyle='rgba(150,200,255,0.5)'; ctx.beginPath(); ctx.arc(sx,sy,k.size*zoom,0,7); ctx.fill(); });
-   zoom=0.55+(phase-4)*0.12;
-   bhScale=0.5;
-   bhX=cx+300; bhY=cy-180;
- }else if(phase<8){
-   // FASE 4: Entrada al sistema solar (6.5-8s)
-   loreText=`<b>[${phase.toFixed(1)}s] SISTEMA SOLAR INTERNO</b><br>8 planetas | Sol G-Type detectado. Entrada estabilizada.`;
-   zoom=0.85+(phase-6.5)*0.04;
-   stars.forEach(s=>{ ctx.fillStyle=`rgba(200,220,255,${0.4+s.s*0.6})`; ctx.beginPath(); ctx.arc(s.x,s.y,0.8+s.s,0,7); ctx.fill(); });
- }else{
-   if(!done){ loreEl.style.opacity='0'; loreEl.style.transition='opacity 1.5s'; setTimeout(()=>loreEl.style.display='none',1500); done=true; c.style.filter='none'; zoom=0.9; }
- }
-
- if(!done) loreEl.innerHTML=loreText;
-
- // dibuja BH siempre
- drawBH(bhX,bhY,bhScale,time,phase);
-
- if(phase>3){
-   ast.forEach(a=>{ a.ang+=0.007; let x3=a.dist*Math.cos(a.ang), z3=a.dist*Math.sin(a.ang); let xr=x3*Math.cos(yaw)-z3*Math.sin(yaw); let zr=x3*Math.sin(yaw)+z3*Math.cos(yaw); let sx=cx+xr*zoom*1.8, sy=cy-zr*Math.sin(pitch)*zoom*0.3; ctx.fillStyle='rgba(100,80,60,0.55)'; ctx.beginPath(); ctx.arc(sx,sy,a.size*zoom,0,7); ctx.fill(); });
- }
-
- if(phase>5){
-   planets.forEach(p=>{
-     let ang=time*(p.dist?0.22/p.dist:0);
-     let x3=p.dist*Math.cos(ang), z3=p.dist*Math.sin(ang);
-     let xr=x3*Math.cos(yaw)-z3*Math.sin(yaw); let zr=x3*Math.sin(yaw)+z3*Math.cos(yaw); let yr=-zr*Math.sin(pitch);
-     let sx=cx+xr*zoom*1.8, sy=cy+yr*zoom*1.8;
-     let appear=phase<8?Math.min(1,(phase-5)/1.5):1;
-     if(p.dist!=0){ ctx.globalAlpha=appear*0.15; ctx.strokeStyle='rgba(0,255,255,0.2)'; ctx.beginPath(); ctx.ellipse(cx,cy,p.dist*zoom*1.8,p.dist*zoom*0.32,0,0,7); ctx.stroke(); ctx.globalAlpha=1; }
-     ctx.globalAlpha=appear;
-     if(p.sun) drawSun(sx,sy,p.size*zoom,time);
-     else { ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(sx,sy,p.size*zoom,0,7); ctx.fill(); if(p.hasRing){ ctx.strokeStyle='rgba(247,236,79,0.5)'; ctx.lineWidth=1*zoom; ctx.beginPath(); ctx.ellipse(sx,sy,p.size*zoom*1.6,p.size*zoom*0.4,0.4,0,7); ctx.stroke(); } }
-     ctx.globalAlpha=1;
-   });
- }
-}
-
-setInterval(draw,16);
-c.addEventListener('touchstart',e=>{if(done){dragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY;}});
+c.addEventListener('touchstart',e=>{if(done){anim.drag=true; anim.lx=e.touches[0].clientX; anim.ly=e.touches[0].clientY;}});
 c.addEventListener('touchmove',e=>{
  if(!done) return;
- if(e.touches.length==1 && dragging){ yaw+=(e.touches[0].clientX-lastX)*0.005; pitch+=(e.touches[0].clientY-lastY)*0.005; pitch=Math.max(-1,Math.min(1,pitch)); lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; }
- if(e.touches.length==2){ let d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); if(window.ld) zoom+=(d-window.ld)*0.006; window.ld=d; zoom=Math.max(0.4,Math.min(4,zoom)); }
+ if(e.touches.length==1 && anim.drag){ anim.yaw+=(e.touches[0].clientX-anim.lx)*0.005; anim.pitch+=(e.touches[0].clientY-anim.ly)*0.005; anim.lx=e.touches[0].clientX; anim.ly=e.touches[0].clientY; }
+ if(e.touches.length==2){ let d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); if(anim.ld) anim.zoom+=(d-anim.ld)*0.006; anim.ld=d; anim.zoom=Math.max(0.4,Math.min(4,anim.zoom)); }
  e.preventDefault();
 },{passive:false});
-c.addEventListener('touchend',()=>{dragging=false; window.ld=0;});
+c.addEventListener('touchend',()=>{anim.drag=false; anim.ld=0;});
 </script>
 </body>
 </html>
