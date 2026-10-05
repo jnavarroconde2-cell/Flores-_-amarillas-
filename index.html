@@ -25,34 +25,47 @@ let anim={zoom:3.5,yaw:0,pitch:0,bh:3.5,blur:5,drag:false,lx:0,ly:0,ld:0};
 const planets=[
  {dist:0,size:18,sun:true},{dist:26,size:3,color:'#aaa'},{dist:40,size:5.5,color:'#e6cdac'},{dist:56,size:6,color:'#2b82ff'},{dist:74,size:4.5,color:'#ff6a3d'},{dist:102,size:12,color:'#d8ca9d'},{dist:134,size:10.5,color:'#f7ec4f',hasRing:true},{dist:164,size:8.5,color:'#43b0f1'},{dist:194,size:8.5,color:'#2d5fcc'},
 ];
-let stars=[]; for(let i=0;i<180;i++) stars.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,s:Math.random()});
+let stars=[]; for(let i=0;i<250;i++) stars.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,s:Math.random()*1.5});
+let ast=[]; for(let i=0;i<20;i++) ast.push({dist:84+Math.random()*6,ang:Math.random()*6.28,size:Math.random()*0.8+0.4});
+let kuiper=[]; for(let i=0;i<25;i++) kuiper.push({dist:220+Math.random()*40,ang:Math.random()*6.28,size:Math.random()*1+0.6});
 
-function drawSun(x,y,r){ ctx.save(); ctx.translate(x,y); ctx.shadowBlur=16; ctx.shadowColor='#ffaa00'; ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.arc(0,0,r,0,7); ctx.fill(); ctx.shadowBlur=0; ctx.restore(); }
-function drawBH(x,y,s){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(0,0,14,0,7); ctx.fill(); ctx.strokeStyle='#ffbb66'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(0,0,16,0,7); ctx.stroke(); ctx.restore(); }
+function drawSun(x,y,r){ ctx.save(); ctx.translate(x,y); ctx.shadowBlur=20; ctx.shadowColor='#ffaa00'; ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.arc(0,0,r,0,7); ctx.fill(); ctx.shadowBlur=0; ctx.restore(); }
+function drawBH(x,y,s){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(0,0,14,0,7); ctx.fill(); ctx.strokeStyle='#ffbb66'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(0,0,17,0,7); ctx.stroke(); ctx.fillStyle='rgba(255,187,102,0.15)'; ctx.beginPath(); ctx.arc(0,0,28,0,7); ctx.fill(); ctx.restore(); }
 
 function render(){
   let cx=innerWidth/2, cy=innerHeight/2.5;
   ctx.fillStyle='#000'; ctx.fillRect(0,0,innerWidth,innerHeight);
-  stars.forEach(s=>{ ctx.fillStyle=`rgba(200,220,255,${0.3+s.s*0.5})`; ctx.fillRect(s.x,s.y,1,1); });
-  let bhX=cx+300*(1-anim.zoom), bhY=cy-180*(1-anim.zoom);
+  // estrellas
+  stars.forEach(s=>{ ctx.fillStyle=`rgba(200,220,255,${0.3+s.s*0.3})`; ctx.beginPath(); ctx.arc(s.x,s.y,s.s,0,7); ctx.fill(); });
+  // BH siempre visible pero se aleja
+  let bhX=cx+Math.cos(anim.yaw)*300*(2-anim.zoom), bhY=cy-180*(anim.bh);
   drawBH(bhX,bhY,anim.bh);
+
+  // asteroides
+  ast.forEach(a=>{ if(anim.zoom<1) return; let x3=a.dist*Math.cos(a.ang), z3=a.dist*Math.sin(a.ang); let xr=x3*Math.cos(anim.yaw)-z3*Math.sin(anim.yaw); let zr=x3*Math.sin(anim.yaw)+z3*Math.cos(anim.yaw); let yr=-zr*Math.sin(anim.pitch); ctx.fillStyle='#555'; ctx.beginPath(); ctx.arc(cx+xr*anim.zoom*1.8, cy+yr*anim.zoom*1.8, a.size*anim.zoom,0,7); ctx.fill(); });
+  // kuiper
+  kuiper.forEach(k=>{ let x3=k.dist*Math.cos(k.ang), z3=k.dist*Math.sin(k.ang); let xr=x3*Math.cos(anim.yaw)-z3*Math.sin(anim.yaw); let zr=x3*Math.sin(anim.yaw)+z3*Math.cos(anim.yaw); let yr=-zr*Math.sin(anim.pitch); ctx.fillStyle='rgba(100,200,255,0.6)'; ctx.beginPath(); ctx.arc(cx+xr*anim.zoom*1.8, cy+yr*anim.zoom*1.8, k.size*anim.zoom,0,7); ctx.fill(); });
+
   planets.forEach(p=>{
     let ang=time*(p.dist?0.22/p.dist:0); let x3=p.dist*Math.cos(ang), z3=p.dist*Math.sin(ang);
     let xr=x3*Math.cos(anim.yaw)-z3*Math.sin(anim.yaw); let zr=x3*Math.sin(anim.yaw)+z3*Math.cos(anim.yaw); let yr=-zr*Math.sin(anim.pitch);
     let sx=cx+xr*anim.zoom*1.8, sy=cy+yr*anim.zoom*1.8;
-    if(p.dist!=0){ ctx.strokeStyle='rgba(0,255,255,0.15)'; ctx.beginPath(); ctx.ellipse(cx,cy,p.dist*anim.zoom*1.8,p.dist*anim.zoom*0.32,0,0,7); ctx.stroke(); }
-    if(p.sun) drawSun(sx,sy,p.size*anim.zoom); else { ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(sx,sy,p.size*anim.zoom,0,7); ctx.fill(); }
+    if(p.dist!=0){ ctx.strokeStyle='rgba(0,255,255,0.18)'; ctx.beginPath(); ctx.ellipse(cx,cy,p.dist*anim.zoom*1.8,p.dist*anim.zoom*0.32,0,0,7); ctx.stroke(); }
+    if(p.sun) drawSun(sx,sy,p.size*anim.zoom); else { ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(sx,sy,p.size*anim.zoom,0,7); ctx.fill(); if(p.hasRing){ ctx.strokeStyle='rgba(247,236,79,0.5)'; ctx.lineWidth=1; ctx.beginPath(); ctx.ellipse(sx,sy,p.size*anim.zoom*1.8,p.size*anim.zoom*0.6,0,0,7); ctx.stroke(); } }
   });
-  time+=0.02;
+  time+=0.015;
   requestAnimationFrame(render);
 }
 render();
 
+// LORE EXTENDIDO 0-15s - AQUI PUEDES AÑADIR MAS TIEMPO CAMBIANDO duration
 gsap.timeline({onComplete:()=>{done=true; loreEl.style.transition='opacity 1s'; loreEl.style.opacity='0'; c.style.filter='none';}})
-.to(anim,{zoom:0.35,bh:0.6,yaw:0.8,blur:3,duration:2,ease:"power2.inOut",onUpdate:()=>{loreEl.innerHTML="<b>[0-2s] GARGANTUA</b><br>Escapando..."; c.style.filter=`blur(${anim.blur}px)`;}})
-.to(anim,{zoom:0.35,yaw:2.5,blur:0,duration:2,ease:"power4.in",onUpdate:()=>{loreEl.innerHTML="<b>[2-4s] WARP 2.5c</b><br>Salto superluminico";}})
-.to(anim,{zoom:0.6,blur:0,duration:2.5,ease:"power1.out",onUpdate:()=>{loreEl.innerHTML="<b>[4-6.5s] KUIPER</b><br>220 UA detectado";}})
-.to(anim,{zoom:0.9,yaw:0.3,pitch:-0.2,bh:0.45,duration:1.5,ease:"power2.out",onUpdate:()=>{loreEl.innerHTML="<b>[6.5-8s] SISTEMA SOLAR</b><br>Entrada estabilizada"; c.style.filter='none';}});
+.to(anim,{zoom:2.5,bh:2.5,blur:4,yaw:0.5,duration:2.5,ease:"power2.inOut",onUpdate:()=>{loreEl.innerHTML="<b>[0-2.5s] GARGANTUA</b><br>Horizonte de sucesos - 10M masas solares<br>Escapando del pull gravitacional"; c.style.filter=`blur(${anim.blur}px)`;}})
+.to(anim,{zoom:1.8,bh:1.8,blur:2,yaw:1.2,duration:2.5,ease:"power2.in",onUpdate:()=>{loreEl.innerHTML="<b>[2.5-5s] DISCO DE ACRECIÓN</b><br>Temperatura 10^9K detectada<br>Acelerando a 0.9c";}})
+.to(anim,{zoom:0.8,bh:1.0,blur:0.5,yaw:2.8,duration:3,ease:"power4.in",onUpdate:()=>{loreEl.innerHTML="<b>[5-8s] WARP DRIVE ACTIVADO</b><br>2.5c - Rompiendo causalidad<br>Dejando la Via Lactea"; c.style.filter=`blur(${anim.blur}px)`;}})
+.to(anim,{zoom:0.55,bh:0.7,blur:0,yaw:3.5,duration:2.5,ease:"power1.out",onUpdate:()=>{loreEl.innerHTML="<b>[8-10.5s] VACIO INTERESTELAR</b><br>10,000 años luz recorridos<br>Entrando a nube de Oort";}})
+.to(anim,{zoom:0.7,pitch:-0.1,bh:0.5,duration:2,ease:"power2.out",onUpdate:()=>{loreEl.innerHTML="<b>[10.5-12.5s] CINTURON DE KUIPER</b><br>220 UA - 25 objetos helados<br>Pluton detectado";}})
+.to(anim,{zoom:1.0,yaw:0.2,pitch:-0.25,bh:0.35,duration:2.5,ease:"power3.out",onUpdate:()=>{loreEl.innerHTML="<b>[12.5-15s] SISTEMA SOLAR INTERIOR</b><br>Entrada estabilizada - 8 planetas<br>Toca para explorar"; c.style.filter='none';}});
 
 c.addEventListener('touchstart',e=>{if(done){anim.drag=true; anim.lx=e.touches[0].clientX; anim.ly=e.touches[0].clientY;}});
 c.addEventListener('touchmove',e=>{
