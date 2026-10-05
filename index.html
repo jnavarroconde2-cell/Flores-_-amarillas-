@@ -1,457 +1,77 @@
 <!DOCTYPE html>
-
 <html lang="es">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-
-<title>Galaxia de Flores Amarillas 🌻</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CONSTELACIÓN GALÁCTICA</title>
 <style>
-
-*{box-sizing:border-box;margin:0}
-
-html,body{width:100%;height:100%;overflow:hidden;background:#000}
-
-body{font-family:Arial,sans-serif;touch-action:none}
-
-#galaxy{display:block;width:100%;height:100%}
-
-#start{
-
- position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;
-
- justify-content:center;align-items:center;background:radial-gradient(circle,#160d00 0%,#030107 45%,#000 100%);
-
- color:#ffd21a;text-align:center
-
-}
-
-.flower{width:130px;height:130px;position:relative;animation:pulse 2.2s infinite}
-
-.petal{position:absolute;left:55px;top:5px;width:20px;height:58px;border-radius:60% 60% 40% 40%;
-
- background:linear-gradient(#ffe95a,#ff9d00);transform-origin:10px 60px;
-
- box-shadow:0 0 14px #ffbf00}
-
-.core{position:absolute;left:37px;top:37px;width:56px;height:56px;border-radius:50%;
-
- background:radial-gradient(circle,#e7a62b 0 20%,#6b2d08 21% 55%,#1b0900 56%);
-
- box-shadow:0 0 25px #ffb000}
-
-@keyframes pulse{50%{transform:scale(1.08);filter:brightness(1.2)}}
-
-#start h1{font-size:25px;margin-top:24px;text-shadow:0 0 20px #ffd21a}
-
-#start p{margin-top:10px;color:#fff3bb;font-size:14px}
-
-#title{
-
- position:fixed;z-index:3;top:16px;left:0;width:100%;text-align:center;
-
- color:#ffd21a;font-size:22px;font-weight:700;text-shadow:0 0 18px #ff9d00;
-
- pointer-events:none
-
-}
-
-#hint{
-
- position:fixed;z-index:3;bottom:18px;left:50%;transform:translateX(-50%);
-
- padding:10px 16px;border:1px solid rgba(255,210,26,.5);border-radius:22px;
-
- background:rgba(0,0,0,.42);backdrop-filter:blur(5px);color:#fff3b0;
-
- font-size:13px;text-align:center;pointer-events:none
-
-}
-
+  body { margin:0; overflow:hidden; background:#02020a; font-family: 'Courier New', monospace; }
+  canvas { display:block; }
+  #hud {
+    position:absolute; top:20px; left:20px; color:#00ffff;
+    border:1px solid #00ffff; padding:12px 18px; background:rgba(0,255,255,0.05);
+    box-shadow:0 0 20px #00ffff66; backdrop-filter: blur(5px);
+  }
+  #hud h1 { margin:0; font-size:14px; letter-spacing:3px; }
+  #hud p { margin:5px 0 0 0; font-size:10px; opacity:0.7; }
 </style>
-
 </head>
-
 <body>
-
-<div id="start">
-
-  <div class="flower" id="flower"></div>
-
-  <h1>Toca para entrar a la galaxia 🌻</h1>
-
-  <p>Explora el universo de flores amarillas</p>
-
+<div id="hud">
+  <h1>▣ SISTEMA GALÁCTICO ▣</h1>
+  <p>> CONSTELACIÓN ACTIVA</p>
+  <p>> NODOS: 150</p>
+  <p id="coords">> COORD: 0,0</p>
 </div>
-
 <canvas id="galaxy"></canvas>
-
-<div id="title">Feliz día de las Flores Amarillas 🌻</div>
-
-<div id="hint">🖐️ Arrastra para girar · 🤏 Pellizca para acercar/alejar</div>
-
-
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
 <script>
-
-const flower=document.getElementById('flower');
-
-for(let i=0;i<12;i++){
-
- const p=document.createElement('div');p.className='petal';
-
- p.style.transform=`rotate(${i*30}deg) translateY(-5px)`;flower.appendChild(p);
-
-}
-
-const core=document.createElement('div');core.className='core';flower.appendChild(core);
-
-
-
-let scene,camera,renderer,world,stars=[],flowers=[],rings=[],planets=[];
-
-let targetRotX=0,targetRotY=0,rotX=.08,rotY=0,zoom=30;
-
-let dragging=false,lastX=0,lastY=0,pinchStart=0,pinchZoom=30;
-
-
-
-function start(){
-
- document.getElementById('start').style.display='none';
-
- init();
-
-}
-
-document.getElementById('start').addEventListener('click',start);
-
-
-
-function init(){
-
- scene=new THREE.Scene();
-
- scene.fog=new THREE.FogExp2(0x020006,.006);
-
- camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,500);
-
- renderer=new THREE.WebGLRenderer({canvas:document.getElementById('galaxy'),antialias:true});
-
- renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
-
- renderer.setSize(innerWidth,innerHeight);
-
- world=new THREE.Group();scene.add(world);
-
-
-
- const ambient=new THREE.AmbientLight(0x5b3a16,1.2);scene.add(ambient);
-
- const sunLight=new THREE.PointLight(0xffc22a,4,90);sunLight.position.set(0,0,0);scene.add(sunLight);
-
-
-
- // Núcleo luminoso
-
- const core=new THREE.Mesh(
-
-  new THREE.SphereGeometry(3.4,32,24),
-
-  new THREE.MeshBasicMaterial({color:0xffb300})
-
- );
-
- world.add(core);
-
- const glow=new THREE.Mesh(
-
-  new THREE.SphereGeometry(5.2,24,16),
-
-  new THREE.MeshBasicMaterial({color:0xff8c00,transparent:true,opacity:.13,depthWrite:false})
-
- );
-
- world.add(glow);
-
-
-
- // Planetas y anillos, inspirados en el universo de referencia
-
- const planetData=[
-
-  [10,2,-5,1.5,0x174f79,true],
-
-  [-12,-3,-2,2.1,0x7d3d18,true],
-
-  [7,-6,5,1.0,0x5d2a8a,false],
-
-  [-7,6,4,1.3,0x315d35,true],
-
-  [15,5,7,.75,0xc46b21,false],
-
-  [-16,2,8,.9,0x8a7b35,false]
-
- ];
-
- planetData.forEach(d=>{
-
-  const g=new THREE.Group();
-
-  g.position.set(d[0],d[1],d[2]);
-
-  const m=new THREE.Mesh(new THREE.SphereGeometry(d[3],20,16),
-
-    new THREE.MeshStandardMaterial({color:d[4],roughness:.8,metalness:.05}));
-
-  g.add(m);
-
-  if(d[5]){
-
-   const r=new THREE.Mesh(new THREE.RingGeometry(d[3]1.5,d[3]2.05,64),
-
-    new THREE.MeshBasicMaterial({color:0xffc51b,side:THREE.DoubleSide,transparent:true,opacity:.75}));
-
-   r.rotation.x=Math.PI/2.4;r.rotation.z=.25;g.add(r);rings.push(r);
-
-  }
-
-  world.add(g);planets.push(g);
-
- });
-
-
-
- // Flores amarillas 3D alrededor de la galaxia
-
- for(let i=0;i<70;i++){
-
-  const g=new THREE.Group();
-
-  const angle=Math.random()Math.PI2;
-
-  const radius=5+Math.pow(Math.random(),.65)*24;
-
-  const y=(Math.random()-.5)*12;
-
-  g.position.set(Math.cos(angle)radius,y,Math.sin(angle)radius*.62);
-
-  g.rotation.set(Math.random()Math.PI,Math.random()Math.PI,Math.random()*Math.PI);
-
-  const size=.22+Math.random()*.5;
-
-
-
-  const c=new THREE.Mesh(new THREE.SphereGeometry(size*.38,8,8),
-
-    new THREE.MeshBasicMaterial({color:0x5a2607}));
-
-  g.add(c);
-
-  for(let j=0;j<10;j++){
-
-   const p=new THREE.Mesh(new THREE.SphereGeometry(size*.18,7,6),
-
-     new THREE.MeshBasicMaterial({color:j%2?0xffd21a:0xffa800}));
-
-   const a=jMath.PI2/10;
-
-   p.position.set(Math.cos(a)size.52,Math.sin(a)size.52,0);
-
-   p.scale.set(1.8,.7,.35);
-
-   p.rotation.z=a;
-
-   g.add(p);
-
-  }
-
-  world.add(g);flowers.push(g);
-
- }
-
-
-
- // Campo de estrellas con profundidad
-
- const geo=new THREE.BufferGeometry(), count=1800, pos=new Float32Array(count*3);
-
- for(let i=0;i<count;i++){
-
-  const a=Math.random()Math.PI2;
-
-  const r=18+Math.random()*100;
-
-  pos[i3]=Math.cos(a)r;
-
-  pos[i3+1]=(Math.random()-.5)80;
-
-  pos[i3+2]=Math.sin(a)r;
-
- }
-
- geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-
- const pts=new THREE.Points(geo,new THREE.PointsMaterial({color:0xffd34d,size:.12,transparent:true,opacity:.9}));
-
- world.add(pts);stars.push(pts);
-
-
-
- // Polvo de nebulosa
-
- const nebGeo=new THREE.BufferGeometry(), n=650, np=new Float32Array(n*3);
-
- for(let i=0;i<n;i++){
-
-  const a=Math.random()Math.PI2, r=Math.random()*28;
-
-  np[i3]=Math.cos(a)r;
-
-  np[i3+1]=(Math.random()-.5)9;
-
-  np[i3+2]=Math.sin(a)r*.65;
-
- }
-
- nebGeo.setAttribute('position',new THREE.BufferAttribute(np,3));
-
- world.add(new THREE.Points(nebGeo,new THREE.PointsMaterial({color:0xff8a00,size:.28,transparent:true,opacity:.22})));
-
-
-
- camera.position.set(0,0,zoom);
-
- addControls();
-
- animate();
-
-}
-
-
-
-function addControls(){
-
- const el=renderer.domElement;
-
- el.addEventListener('pointerdown',e=>{
-
-  dragging=true;lastX=e.clientX;lastY=e.clientY;
-
-  el.setPointerCapture?.(e.pointerId);
-
- });
-
- el.addEventListener('pointermove',e=>{
-
-  if(!dragging)return;
-
-  targetRotY+=(e.clientX-lastX)*.006;
-
-  targetRotX+=(e.clientY-lastY)*.004;
-
-  targetRotX=Math.max(-1.15,Math.min(1.15,targetRotX));
-
-  lastX=e.clientX;lastY=e.clientY;
-
- });
-
- el.addEventListener('pointerup',()=>dragging=false);
-
- el.addEventListener('pointercancel',()=>dragging=false);
-
- el.addEventListener('wheel',e=>{
-
-  e.preventDefault();zoom+=e.deltaY*.025;zoom=Math.max(8,Math.min(70,zoom));
-
- },{passive:false});
-
-
-
- el.addEventListener('touchstart',e=>{
-
-  if(e.touches.length===2){
-
-   pinchStart=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
-
-                         e.touches[0].clientY-e.touches[1].clientY);
-
-   pinchZoom=zoom;
-
-  }
-
- },{passive:false});
-
- el.addEventListener('touchmove',e=>{
-
-  if(e.touches.length===2){
-
-   e.preventDefault();
-
-   const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
-
-                      e.touches[0].clientY-e.touches[1].clientY);
-
-   zoom=pinchZoom-(d-pinchStart)*.045;
-
-   zoom=Math.max(8,Math.min(70,zoom));
-
-  }
-
- },{passive:false});
-
-}
-
-function animate(){
-
- requestAnimationFrame(animate);
-
- rotY+=(targetRotY-rotY)*.08;
-
- rotX+=(targetRotX-rotX)*.08;
-
- world.rotation.y=rotY;
-
- world.rotation.x=rotX*.45;
-
- camera.position.z+=(zoom-camera.position.z)*.1;
-
- flowers.forEach((f,i)=>{
-
-  f.rotation.y+=.004+(i%4)*.001;
-
-  f.position.y+=Math.sin(Date.now().0006+i).0008;
-
- });
-
- planets.forEach((p,i)=>p.rotation.y+=.002+i*.0002);
-
- rings.forEach(r=>r.rotation.z+=.002);
-
- stars.forEach(s=>s.rotation.y-=.0003);
-
- renderer.render(scene,camera);
-
-}
-
-addEventListener('resize',()=>{
-
- if(!camera)return;
-
- camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
-
- renderer.setSize(innerWidth,innerHeight);
-
+const canvas = document.getElementById('galaxy');
+const ctx = canvas.getContext('2d');
+let w, h, mouse = {x:-1000, y:-1000};
+function resize(){ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; }
+window.addEventListener('resize', resize);
+window.addEventListener('mousemove', e => {
+  mouse.x=e.clientX; mouse.y=e.clientY;
+  document.getElementById('coords').innerText = `> COORD: ${e.clientX},${e.clientY}`;
 });
-
+resize();
+class Star {
+  constructor(){
+    this.x=Math.random()*w; this.y=Math.random()*h;
+    this.vx=(Math.random()-0.5)*0.5; this.vy=(Math.random()-0.5)*0.5;
+    this.r=Math.random()*1.5+0.5; this.pulse=Math.random()*Math.PI*2;
+  }
+  update(){ this.x+=this.vx; this.y+=this.vy; this.pulse+=0.02; if(this.x<0||this.x>w) this.vx*=-1; if(this.y<0||this.y>h) this.vy*=-1; }
+  draw(){
+    let glow = Math.sin(this.pulse)*0.5+1;
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.r*glow, 0, Math.PI*2);
+    ctx.fillStyle=`rgba(${100+glow*50}, ${200+glow*30}, 255, ${0.5+glow*0.3})`;
+    ctx.shadowBlur=10*glow; ctx.shadowColor='#00ffff'; ctx.fill(); ctx.shadowBlur=0;
+  }
+}
+const stars = Array.from({length:150}, ()=>new Star());
+function animate(){
+  ctx.fillStyle='rgba(2,2,10,0.2)'; ctx.fillRect(0,0,w,h);
+  stars.forEach(s=>{ s.update(); s.draw(); });
+  for(let i=0;i<stars.length;i++){
+    for(let j=i+1;j<stars.length;j++){
+      let dx=stars[i].x-stars[j].x, dy=stars[i].y-stars[j].y;
+      let dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<130){
+        ctx.beginPath(); ctx.moveTo(stars[i].x, stars[i].y); ctx.lineTo(stars[j].x, stars[j].y);
+        ctx.strokeStyle=`rgba(0,255,255,${1-dist/130})`; ctx.lineWidth=0.4; ctx.stroke();
+      }
+    }
+    let dmx=stars[i].x-mouse.x, dmy=stars[i].y-mouse.y;
+    let dmouse=Math.sqrt(dmx*dmx+dmy*dmy);
+    if(dmouse<180){
+      ctx.beginPath(); ctx.moveTo(stars[i].x, stars[i].y); ctx.lineTo(mouse.x, mouse.y);
+      ctx.strokeStyle=`rgba(255,0,255,${1-dmouse/180})`; ctx.lineWidth=0.8; ctx.stroke();
+    }
+  }
+  requestAnimationFrame(animate);
+}
+animate();
 </script>
-
 </body>
-
-</html
+</html>
