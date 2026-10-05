@@ -1,32 +1,29 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SOLAR V27 STABLE</title>
+<title>UNIVERSO V27 - 15s LORE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<style>body{margin:0;background:#000;overflow:hidden}canvas{display:block}#lore{position:absolute;top:10%;left:50%;transform:translateX(-50%);color:#0ff;font-family:monospace;text-align:center;z-index:10}</style>
-</head><body><div id="lore">Iniciando V27...</div><canvas id="c"></canvas>
+<style>body{margin:0;background:#000;overflow:hidden}canvas{display:block}#lore{position:absolute;top:8%;left:50%;transform:translateX(-50%);color:#0ff;font-family:monospace;text-align:center;z-index:10;text-shadow:0 0 8px #0ff;padding:10px;border:1px solid #0ff44;background:rgba(0,0,0,0.6);border-radius:8px}</style>
+</head><body><div id="lore">Iniciando UNIVERSO V27...</div><canvas id="c"></canvas>
 <script>
-let canvas=document.getElementById('c'), ctx=canvas.getContext('2d'); canvas.width=innerWidth; canvas.height=innerHeight;
+let canvas=document.getElementById('c'), ctx=canvas.getContext('2d'); 
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight} resize(); addEventListener('resize',resize);
 let lore=document.getElementById('lore');
-let anim={zoom:3.5,yaw:0,bh:3.5,blur:0,done:false};
+let anim={zoom:3.5,yaw:0,bh:3.5,done:false};
 let planets=[{d:26,r:2,c:'#aaa'},{d:40,r:4,c:'#e6cdac'},{d:56,r:4,c:'#2b82ff'},{d:74,r:3,c:'#ff6a3d'},{d:102,r:7,c:'#d8ca9d'},{d:134,r:6,c:'#f7ec4f',ring:true},{d:164,r:5,c:'#43b0f1'},{d:194,r:5,c:'#2d5fcc'}].map(p=>({...p,a:Math.random()*6.28}));
-
+let stars=[]; for(let i=0;i<400;i++) stars.push({x:Math.random(),y:Math.random()});
 function draw(){
  requestAnimationFrame(draw); ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
- ctx.fillStyle='#fff'; for(let i=0;i<300;i++) ctx.fillRect(Math.random()*canvas.width,Math.random()*canvas.height,1,1);
- // sun
- ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.arc(canvas.width/2,canvas.height/2,10*anim.zoom,0,Math.PI*2); ctx.fill();
- // bh
+ ctx.fillStyle='#fff'; stars.forEach(s=>{ctx.globalAlpha=0.5+Math.random()*0.5; ctx.fillRect(s.x*canvas.width,s.y*canvas.height,1,1)}); ctx.globalAlpha=1;
+ ctx.fillStyle='#ffcc00'; ctx.shadowBlur=20; ctx.shadowColor='#ffcc00'; ctx.beginPath(); ctx.arc(canvas.width/2,canvas.height/2,10*anim.zoom,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
  let bhX=canvas.width/2+250*anim.zoom*Math.cos(anim.yaw); let bhY=canvas.height/2-100*anim.zoom; ctx.fillStyle='#000'; ctx.strokeStyle='#ffbb66'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(bhX,bhY,12*anim.bh,0,Math.PI*2); ctx.fill(); ctx.stroke();
- // planets
- planets.forEach(p=>{ p.a+=0.01/p.d; let x=canvas.width/2+Math.cos(p.a+p.d*0.1)*p.d*anim.zoom+anim.yaw*20; let y=canvas.height/2+Math.sin(p.a)*p.d*0.2*anim.zoom; ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(x,y,p.r*anim.zoom,0,Math.PI*2); ctx.fill(); if(p.ring){ctx.strokeStyle=p.c; ctx.beginPath(); ctx.ellipse(x,y,p.r*2*anim.zoom,p.r*0.8*anim.zoom,0,0,Math.PI*2); ctx.stroke();}});
+ planets.forEach(p=>{ p.a+=0.01/p.d; let x=canvas.width/2+Math.cos(p.a)*p.d*anim.zoom+anim.yaw*20; let y=canvas.height/2+Math.sin(p.a)*p.d*0.2*anim.zoom; ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(x,y,p.r*anim.zoom,0,Math.PI*2); ctx.fill(); if(p.ring){ctx.strokeStyle=p.c; ctx.beginPath(); ctx.ellipse(x,y,p.r*2*anim.zoom,p.r*0.8*anim.zoom,0,0,Math.PI*2); ctx.stroke();}});
 }
 draw();
-
-gsap.timeline({onComplete:()=>{anim.done=true; lore.style.display='none';}})
-.to(anim,{zoom:2.5,bh:2.5,yaw:0.5,duration:2.5,onUpdate:()=>lore.innerHTML="<b>[0-2.5s] GARGANTUA</b>"})
-.to(anim,{zoom:1.8,yaw:1.2,duration:2.5,onUpdate:()=>lore.innerHTML="<b>[2.5-5s] DISCO ACRECION</b>"})
-.to(anim,{zoom:0.8,yaw:2.8,duration:3,onUpdate:()=>lore.innerHTML="<b>[5-8s] WARP 2.5c</b>"})
-.to(anim,{zoom:0.55,yaw:3.5,duration:2.5,onUpdate:()=>lore.innerHTML="<b>[8-10.5s] OORT</b>"})
-.to(anim,{zoom:0.7,duration:2,onUpdate:()=>lore.innerHTML="<b>[10.5-12.5s] KUIPER</b>"})
-.to(anim,{zoom:1.0,yaw:0.2,duration:2.5,onUpdate:()=>lore.innerHTML="<b>[12.5-15s] SISTEMA SOLAR</b>";});
+gsap.timeline({onComplete:()=>{anim.done=true; lore.innerHTML="UNIVERSO V27 LISTO<br>Arrastra para explorar"; setTimeout(()=>lore.style.opacity='0.5',2000);}})
+.to(anim,{zoom:2.5,bh:2.5,yaw:0.5,duration:2.5,ease:"power2.inOut",onUpdate:()=>lore.innerHTML="<b>[0-2.5s] GARGANTUA</b><br>Agujero negro supermasivo"})
+.to(anim,{zoom:1.8,yaw:1.2,duration:2.5,ease:"power2.in",onUpdate:()=>lore.innerHTML="<b>[2.5-5s] DISCO DE ACRECION</b><br>Luz atrapada orbitando"})
+.to(anim,{zoom:0.8,yaw:2.8,duration:3,ease:"power4.in",onUpdate:()=>lore.innerHTML="<b>[5-8s] WARP 2.5c</b><br>Cruzando 2000 estrellas"}})
+.to(anim,{zoom:0.55,yaw:3.5,duration:2.5,onUpdate:()=>lore.innerHTML="<b>[8-10.5s] NUBE DE OORT</b><br>Limite del sistema"}})
+.to(anim,{zoom:0.7,duration:2,onUpdate:()=>lore.innerHTML="<b>[10.5-12.5s] CINTURON DE KUIPER</b><br>Hielo y roca"}})
+.to(anim,{zoom:1.0,yaw:0.2,duration:2.5,onUpdate:()=>lore.innerHTML="<b>[12.5-15s] SISTEMA SOLAR</b><br>8 planetas + Sol";});
 </script></body></html>
