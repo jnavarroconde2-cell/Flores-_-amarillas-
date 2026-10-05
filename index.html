@@ -1,67 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SOLAR V28 - 3D</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOLAR V28.1 FIX</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
-<style>body{margin:0;overflow:hidden;background:#000} #lore{position:absolute;top:10%;left:50%;transform:translateX(-50%);color:#0ff;font-family:monospace;text-align:center;pointer-events:none;z-index:10;text-shadow:0 0 10px #0ff} canvas{display:block}</style>
+<style>body{margin:0;overflow:hidden;background:#000} #lore{position:absolute;top:10%;left:50%;transform:translateX(-50%);color:#0ff;font-family:monospace;text-align:center;z-index:10;text-shadow:0 0 10px #0ff} canvas{display:block}</style>
 </head>
 <body>
-<div id="lore">Iniciando V28 3D...</div>
-<script type="module">
-import * as THREE from 'three';
-const loreEl=document.getElementById('lore');
+<div id="lore">Iniciando V28.1 FIX...</div>
+<script>
+let loreEl=document.getElementById('lore');
 let scene=new THREE.Scene();
 let camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,2000);
 let renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setSize(innerWidth,innerHeight); document.body.appendChild(renderer.domElement);
 
-let anim={zoom:3.5,yaw:0,pitch:0,bh:3.5,blur:0,done:false};
+let anim={zoom:3.5,yaw:0,pitch:0,done:false};
 camera.position.set(0,80,300);
+scene.add(new THREE.AmbientLight(0x444444));
+let sunLight=new THREE.PointLight(0xffcc00,2,500); scene.add(sunLight);
 
-// luces
-scene.add(new THREE.AmbientLight(0x333333));
-let sunLight=new THREE.PointLight(0xffcc00,3,500); scene.add(sunLight);
-
-// estrellas
 let starGeo=new THREE.BufferGeometry(); let starPos=[]; for(let i=0;i<2000;i++) starPos.push((Math.random()-0.5)*2000,(Math.random()-0.5)*2000,(Math.random()-0.5)*2000); starGeo.setAttribute('position',new THREE.Float32BufferAttribute(starPos,3)); scene.add(new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff,size:1.2})));
 
-// sol
-let sun=new THREE.Mesh(new THREE.SphereGeometry(10,32,32), new THREE.MeshBasicMaterial({color:0xffcc00})); scene.add(sun); sunLight.position.copy(sun.position);
+let sun=new THREE.Mesh(new THREE.SphereGeometry(10,32,32), new THREE.MeshBasicMaterial({color:0xffcc00})); scene.add(sun);
+let bh=new THREE.Mesh(new THREE.SphereGeometry(12,32,32), new THREE.MeshBasicMaterial({color:0x000000})); let bhRing=new THREE.Mesh(new THREE.RingGeometry(14,22,64), new THREE.MeshBasicMaterial({color:0xffbb66,side:THREE.DoubleSide,transparent:true,opacity:0.6})); bhRing.rotation.x=Math.PI/2; let bhGroup=new THREE.Group(); bhGroup.add(bh,bhRing); bhGroup.position.set(250,-100,-400); scene.add(bhGroup);
 
-// agujero negro
-let bh=new THREE.Mesh(new THREE.SphereGeometry(12,32,32), new THREE.MeshBasicMaterial({color:0x000000})); let bhRing=new THREE.Mesh(new THREE.RingGeometry(14,20,64), new THREE.MeshBasicMaterial({color:0xffbb66,side:THREE.DoubleSide,transparent:true,opacity:0.6})); bhRing.rotation.x=Math.PI/2; let bhGroup=new THREE.Group(); bhGroup.add(bh,bhRing); bhGroup.position.set(250,-100,-400); scene.add(bhGroup);
+let planetData=[{dist:26,size:1.5,c:0xaaaaaa},{dist:40,size:2.8,c:0xe6cdac},{dist:56,size:3,c:0x2b82ff},{dist:74,size:2.5,c:0xff6a3d},{dist:102,size:6,c:0xd8ca9d},{dist:134,size:5.5,c:0xf7ec4f},{dist:164,size:4.2,c:0x43b0f1},{dist:194,size:4.2,c:0x2d5fcc}];
+let planets=planetData.map(d=>{ let m=new THREE.Mesh(new THREE.SphereGeometry(d.size,32,32), new THREE.MeshStandardMaterial({color:d.c})); m.userData={dist:d.dist,ang:Math.random()*6.28}; scene.add(m); if(d.dist==134){ let ring=new THREE.Mesh(new THREE.RingGeometry(d.size*1.5,d.size*2.2,32), new THREE.MeshBasicMaterial({color:0xf7ec4f,side:THREE.DoubleSide,transparent:true,opacity:0.5})); ring.rotation.x=Math.PI/2; m.add(ring);} return m; });
 
-// planetas 3D con textura
-let loader=new THREE.TextureLoader();
-let planetData=[
- {dist:26,size:1.5,color:0xaaaaaa},{dist:40,size:2.8,color:0xe6cdac},{dist:56,size:3,color:0x2b82ff},{dist:74,size:2.5,color:0xff6a3d},{dist:102,size:6,color:0xd8ca9d},{dist:134,size:5.5,color:0xf7ec4f},{dist:164,size:4.2,color:0x43b0f1},{dist:194,size:4.2,color:0x2d5fcc},
-];
-let planets=planetData.map(d=>{
-  let m=new THREE.Mesh(new THREE.SphereGeometry(d.size,32,32), new THREE.MeshStandardMaterial({color:d.color,roughness:0.8}));
-  m.userData={dist:d.dist,ang:Math.random()*6.28}; scene.add(m);
-  if(d.dist==134){ let ring=new THREE.Mesh(new THREE.RingGeometry(d.size*1.5,d.size*2.2,32), new THREE.MeshBasicMaterial({color:0xf7ec4f,side:THREE.DoubleSide,transparent:true,opacity:0.5})); ring.rotation.x=Math.PI/2; m.add(ring); }
-  return m;
-});
+function render(){ requestAnimationFrame(render); planets.forEach(p=>{ p.userData.ang+=0.01/p.userData.dist; p.position.x=Math.cos(p.userData.ang)*p.userData.dist; p.position.z=Math.sin(p.userData.ang)*p.userData.dist; p.rotation.y+=0.01; }); bhGroup.rotation.y+=0.005; camera.position.x=Math.sin(anim.yaw)*200*(2-anim.zoom); camera.position.z=Math.cos(anim.yaw)*200*(2-anim.zoom); camera.position.y=80+anim.pitch*100; camera.lookAt(0,0,0); renderer.render(scene,camera); } render();
 
-// render loop
-function render(){ requestAnimationFrame(render);
-  planets.forEach(p=>{ p.userData.ang+=0.01/p.userData.dist; p.position.x=Math.cos(p.userData.ang)*p.userData.dist; p.position.z=Math.sin(p.userData.ang)*p.userData.dist; p.rotation.y+=0.01; });
-  bhGroup.rotation.y+=0.005;
-  camera.position.x=Math.sin(anim.yaw)*200*(2-anim.zoom); camera.position.z=Math.cos(anim.yaw)*200*(2-anim.zoom); camera.position.y=80+anim.pitch*100; camera.lookAt(0,0,0);
-  renderer.render(scene,camera);
-} render();
-
-// TIMELINE 15s LORE
 gsap.timeline({onComplete:()=>{anim.done=true; loreEl.style.opacity='0';}})
-.to(anim,{zoom:2.5,bh:2.5,yaw:0.5,duration:2.5,ease:"power2.inOut",onUpdate:()=>loreEl.innerHTML="<b>[0-2.5s] GARGANTUA 3D</b><br>Agujero negro real"})
-.to(anim,{zoom:1.8,yaw:1.2,duration:2.5,ease:"power2.in",onUpdate:()=>loreEl.innerHTML="<b>[2.5-5s] DISCO DE ACRECION</b><br>Ring shader activado"})
-.to(anim,{zoom:0.8,yaw:2.8,duration:3,ease:"power4.in",onUpdate:()=>loreEl.innerHTML="<b>[5-8s] WARP 2.5c</b><br>2000 estrellas en 3D"})
-.to(anim,{zoom:0.55,yaw:3.5,duration:2.5,onUpdate:()=>loreEl.innerHTML="<b>[8-10.5s] OORT</b><br>Vacio interestelar"})
-.to(anim,{zoom:0.7,pitch:-0.1,duration:2,onUpdate:()=>loreEl.innerHTML="<b>[10.5-12.5s] KUIPER 3D</b>"})
-.to(anim,{zoom:1.0,yaw:0.2,pitch:-0.25,duration:2.5,onUpdate:()=>loreEl.innerHTML="<b>[12.5-15s] SISTEMA SOLAR 3D</b><br>Toca y arrastra para rotar";}});
+.to(anim,{zoom:2.5,yaw:0.5,duration:2.5,onUpdate:()=>loreEl.innerHTML="<b>[0-2.5s] GARGANTUA 3D</b>"})
+.to(anim,{zoom:1.8,yaw:1.2,duration:2.5,onUpdate:()=>loreEl.innerHTML="<b>[2.5-5s] DISCO ACRECION</b>"})
+.to(anim,{zoom:0.8,yaw:2.8,duration:3,onUpdate:()=>loreEl.innerHTML="<b>[5-8s] WARP 2.5c - 2000 ESTRELLAS</b>"})
+.to(anim,{zoom:0.55,yaw:3.5,duration:2.5,onUpdate:()=>loreEl.innerHTML="<b>[8-10.5s] OORT</b>"})
+.to(anim,{zoom:0.7,pitch:-0.1,duration:2,onUpdate:()=>loreEl.innerHTML="<b>[10.5-12.5s] KUIPER</b>"})
+.to(anim,{zoom:1.0,yaw:0.2,pitch:-0.25,duration:2.5,onUpdate:()=>loreEl.innerHTML="<b>[12.5-15s] SISTEMA SOLAR 3D - ARRASTRA</b>";}});
 
-// controles touch
 let sx=0,sy=0,drag=false;
 renderer.domElement.addEventListener('touchstart',e=>{if(!anim.done)return; drag=true; sx=e.touches[0].clientX; sy=e.touches[0].clientY;});
 renderer.domElement.addEventListener('touchmove',e=>{if(!drag)return; anim.yaw+=(e.touches[0].clientX-sx)*0.01; anim.pitch+=(e.touches[0].clientY-sy)*0.01; sx=e.touches[0].clientX; sy=e.touches[0].clientY; e.preventDefault();},{passive:false});
